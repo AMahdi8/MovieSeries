@@ -2,43 +2,55 @@ from django.db import models
 
 
 class Country(models.Model):
-    name = models.CharField(max_length=60)
+    name = models.CharField(max_length=60, unique=True)
+
+    def __str__(self):
+        return self.name
 
 
 class Language(models.Model):
-    name = models.CharField(max_length=60)
+    name = models.CharField(max_length=60, unique=True)
+
+    def __str__(self):
+        return self.name
 
 
 class Genre(models.Model):
-    name = models.CharField(max_length=60)
+    name = models.CharField(max_length=60, unique=True)
 
-# class Image(models.Model):
-#     image = models.ImageField(upload_to='media/images')
+    def __str__(self):
+        return self.name
 
+# Actor could be add later i dont need it right now
+# class Actor(models.Model):
+#     name = models.CharField(max_length=255)
+#     birth_date = models.DateField()
+#     bio = models.TextField()
+#     images = models.ImageField(
+#         upload_to='media/images/actors/',
+#         null=True,
+#         blank=True,
+#     )
+#     country = models.ForeignKey(
+#         Country,
+#         on_delete=models.DO_NOTHING,
+#         related_name='actors',
+#         null=True,
+#         blank=True
+#     )
 
-class Actor(models.Model):
-    name = models.CharField(max_length=255)
-    birth_date = models.DateField()
-    bio = models.TextField()
-    images = models.ImageField(
-        upload_to='media/images/actors/',
-        null=True,
-        blank=True,
-    )
-    country = models.ForeignKey(
-        Country,
-        on_delete=models.DO_NOTHING,
-        related_name='actors',
-        null=True,
-        blank=True
-    )
+#     def __str__(self):
+#         return self.name
 
 
 class Movie(models.Model):
     title = models.CharField(max_length=255)
     release_year = models.IntegerField()
     duration = models.IntegerField()
-    description = models.TextField()
+    description = models.TextField(
+        null=True,
+        blank=True
+    )
     imdb_rank = models.IntegerField(default=251)
     imdb_rating = models.DecimalField(
         max_digits=3,
@@ -60,6 +72,7 @@ class Movie(models.Model):
     countries = models.ManyToManyField(
         Country,
         related_name='movies',
+        blank=True
     )
     languages = models.ManyToManyField(
         Language,
@@ -69,13 +82,14 @@ class Movie(models.Model):
     genres = models.ManyToManyField(
         Genre,
         related_name='movies',
-    )
-    actors = models.ManyToManyField(
-        Actor,
-        related_name='movies'
+        blank=True
     )
 
+    def __str__(self):
+        return f'{self.title} {self.release_year}'
 
+
+# TODO: Create a logic for changing seasons fields base on every season object added to this series or a function
 class Series(models.Model):
     title = models.CharField(max_length=255)
     release_year = models.IntegerField()
@@ -83,8 +97,10 @@ class Series(models.Model):
         null=True,
         blank=True
     )
-    seasons = models.IntegerField(default=1)
-    description = models.TextField()
+    description = models.TextField(
+        null=True,
+        blank=True
+    )
     imdb_rank = models.IntegerField(default=251)
     imdb_rating = models.DecimalField(
         max_digits=3,
@@ -106,19 +122,50 @@ class Series(models.Model):
     countries = models.ManyToManyField(
         Country,
         related_name='series',
+        blank=True
     )
     languages = models.ManyToManyField(
         Language,
         related_name='series',
+        blank=True
     )
     genre = models.ManyToManyField(
         Genre,
         related_name='series',
+        blank=True
     )
-    actors = models.ManyToManyField(
-        Actor,
-        related_name='series'
+
+    def __str__(self):
+        return self.title
+
+    # def seasons(self):
+        # return self.seasons
+
+
+# TODO: Add a function for episodes of season
+class Season(models.Model):
+    title = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
     )
+    number = models.IntegerField()
+
+    series = models.ForeignKey(
+        Series,
+        on_delete=models.CASCADE,
+        related_name='seasons'
+    )
+    avg_duration = models.IntegerField()
+    release_year = models.IntegerField()
+    description = models.TextField(
+        null=True,
+        blank=True
+    )
+
+    def __str__(self):
+        season = str(self.number).zfill(3)
+        return f"{self.series}: {self.title or ''} (S{season})"
 
 
 class Episode(models.Model):
@@ -127,53 +174,28 @@ class Episode(models.Model):
         null=True,
         blank=True
     )
-    season_number = models.IntegerField()
-    episode_number = models.IntegerField()
+    season = models.ForeignKey(
+        Season,
+        on_delete=models.CASCADE,
+        related_name='episodes',
+    )
+    number = models.IntegerField()
     duration = models.IntegerField(
         null=True,
         blank=True
     )
-    release_date = models.DateField(
-        null=True,
-        blank=True
-    )
-    description = models.TextField()
-    series = models.ForeignKey(
-        Series,
-        on_delete=models.CASCADE,
-        related_name='episodes'
-    )
-
-
-class Trailer(models.Model):
-    title = models.CharField(
-        max_length=255,
-        null=True,
-        blank=True
-    )
-    url = models.TextField()
-    upload_date = models.DateField()
-    movie = models.ForeignKey(
-        Movie,
-        on_delete=models.DO_NOTHING,
-        related_name='trailer',
-        null=True,
-        blank=True
-    )
-    series = models.ForeignKey(
-        Series,
-        on_delete=models.DO_NOTHING,
-        related_name='trailer',
-        null=True,
-        blank=True
-    )
-    season = models.IntegerField(
+    description = models.TextField(
         null=True,
         blank=True
     )
 
+    def __str__(self):
+        season = str(self.season.number).zfill(3)
+        episode = str(self.number).zfill(3)
+        return f"{self.season.series}: {self.title or ''} (S{season}E{episode})"
 
-class DownloadURL(models.Model):
+
+class DownloadFile(models.Model):
     class QualityChoices(models.TextChoices):
         # Standard Definition
         P144 = '144p', '144p'
@@ -220,8 +242,6 @@ class DownloadURL(models.Model):
     )
     file = models.FileField(
         upload_to='media/video/',
-        null=True,
-        blank=True
     )
     quality = models.CharField(
         max_length=20,
@@ -231,3 +251,94 @@ class DownloadURL(models.Model):
         null=True,
         blank=True
     )
+
+    def __str__(self):
+        context = f"Movie: {self.movie.title}"\
+            if self.movie\
+            else f"Episode: {self.episode.title} (S{self.episode.season}E{self.episode.number})" \
+            if self.episode\
+            else "No Context"
+
+        file_name = self.file.name.split('/')[-1] if self.file else "No File"
+        return f"{context} | Quality: {self.quality} | File: {file_name}"
+
+    def save(self, *args, **kwargs):
+        if not self.episode and not self.movie:
+            raise ValueError(
+                "Download File must be associated with either a movie or a series.")
+        if self.episode and self.movie:
+            raise ValueError(
+                "Download File cannot be associated with both a movie and a series simultaneously.")
+        return super().save(*args, **kwargs)
+
+
+class Subtitle(models.Model):
+    title = models.CharField(
+        null=True,
+        blank=True
+    )
+    language = models.ForeignKey(
+        Language,
+        on_delete=models.DO_NOTHING,
+        related_name='subtitles'
+    )
+    file = models.FileField(upload_to='media/subtitles/')
+    download_file = models.ForeignKey(
+        DownloadFile,
+        on_delete=models.CASCADE,
+        related_name='subtitles',
+    )
+
+    def __str__(self):
+        return f"Subtitle ({self.language}) for {self.download_file.quality}"
+
+
+
+class Trailer(models.Model):
+    title = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
+    url = models.TextField()
+    upload_date = models.DateField()
+    movie = models.ForeignKey(
+        Movie,
+        on_delete=models.CASCADE,
+        related_name='trailers',
+        null=True,
+        blank=True
+    )
+    series_season = models.ForeignKey(
+        Season,
+        on_delete=models.CASCADE,
+        related_name='trailers',
+        null=True,
+        blank=True
+    )
+
+    def __str__(self):
+        if self.movie:
+            if self.title:
+                return f"Trailer for Movie: {self.movie} - {self.title}"
+            else:
+                return f"Trailer for Movie: {self.movie}"
+
+        elif self.series_season:
+            series_title = self.series_season.series
+            season_number = f"Season {self.series_season.number:02}"
+            if self.title:
+                return f"Trailer for Series: {series_title} ({season_number}) - {self.title}"
+            else:
+                return f"Trailer for Series: {series_title} ({season_number})"
+
+        return f"Trailer: {self.title}"
+
+    def save(self, *args, **kwargs):
+        if not self.series_season and not self.movie:
+            raise ValueError(
+                "Trailer must be associated with either a movie or a series.")
+        if self.series_season and self.movie:
+            raise ValueError(
+                "Trailer cannot be associated with both a movie and a series simultaneously.")
+        return super().save(*args, **kwargs)
