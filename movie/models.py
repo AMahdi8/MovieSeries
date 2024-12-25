@@ -58,12 +58,6 @@ class Movie(models.Model):
         null=True,
         blank=True,
     )
-    user_rating = models.DecimalField(
-        max_digits=3,
-        decimal_places=1,
-        null=True,
-        blank=True,
-    )
     image = models.ImageField(
         upload_to='media/images/movie/',
         null=True,
@@ -84,6 +78,16 @@ class Movie(models.Model):
         related_name='movies',
         blank=True
     )
+
+    @property
+    def average_rating(self):
+        ratings = self.comments.exclude(
+            rating=None).values_list('rating', flat=True)
+        return sum(ratings) / len(ratings) if ratings else None
+
+    @property
+    def comments_count(self):
+        return self.comments.count()
 
     def __str__(self):
         return f'{self.title} {self.release_year}'
@@ -108,12 +112,6 @@ class Series(models.Model):
         null=True,
         blank=True,
     )
-    user_rating = models.DecimalField(
-        max_digits=3,
-        decimal_places=1,
-        null=True,
-        blank=True,
-    )
     image = models.ImageField(
         upload_to='media/images/series',
         null=True,
@@ -129,14 +127,26 @@ class Series(models.Model):
         related_name='series',
         blank=True
     )
-    genre = models.ManyToManyField(
+    genres = models.ManyToManyField(
         Genre,
         related_name='series',
         blank=True
     )
 
+    @property
+    def average_rating(self):
+        ratings = self.comments.exclude(
+            rating=None).values_list('rating', flat=True)
+        return sum(ratings) / len(ratings) if ratings else None
+
+    @property
+    def comments_count(self):
+        return self.comments.count()
+
+    
     def __str__(self):
         return self.title
+    
 
     # def seasons(self):
         # return self.seasons
@@ -291,7 +301,6 @@ class Subtitle(models.Model):
 
     def __str__(self):
         return f"Subtitle ({self.language}) for {self.download_file.quality}"
-
 
 
 class Trailer(models.Model):
