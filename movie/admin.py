@@ -52,7 +52,7 @@ class MovieAdmin(admin.ModelAdmin):
 class SeriesAdmin(admin.ModelAdmin):
     list_display = ('title', 'release_year', 'imdb_rating', 'average_rating')
     search_fields = ('title',)
-    list_filter = ('release_year', 'end_date',
+    list_filter = ('release_year',
                    'countries', 'languages', 'genres')
     filter_horizontal = ('countries', 'languages', 'genres')
     autocomplete_fields = ('countries', 'languages', 'genres')

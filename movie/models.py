@@ -21,32 +21,47 @@ class Genre(models.Model):
     def __str__(self):
         return self.name
 
-# Actor could be add later i dont need it right now
-# class Actor(models.Model):
-#     name = models.CharField(max_length=255)
-#     birth_date = models.DateField()
-#     bio = models.TextField()
-#     images = models.ImageField(
-#         upload_to='media/images/actors/',
-#         null=True,
-#         blank=True,
-#     )
-#     country = models.ForeignKey(
-#         Country,
-#         on_delete=models.DO_NOTHING,
-#         related_name='actors',
-#         null=True,
-#         blank=True
-#     )
 
-#     def __str__(self):
-#         return self.name
+class Crew(models.Model):
+    ROLE_CHOICES = (
+        ('A', 'Actor'),
+        ('D', 'Director'),
+        ('W', 'Writer'),
+        ('O', 'Other')
+    )
+    name = models.CharField(max_length=255)
+    role = models.CharField(max_length=1, choices=ROLE_CHOICES)
+    bio = models.TextField()
+    birth_date = models.DateField()
+    image = models.ImageField(
+        upload_to='media/images/crews/',
+        null=True,
+        blank=True
+    )
+    country = models.ForeignKey(
+        Country,
+        on_delete=models.DO_NOTHING,
+        related_name='actors',
+        null=True,
+        blank=True
+    )
+
+    def __str__(self):
+        return self.name
 
 
 class Movie(models.Model):
+    AGE_CATEGORY_CHOICES = (
+        ('G', 'General Audiences'),
+        ('PG', 'Parental Guidance Suggested'),
+        ('PG-13', 'Parents Strongly Cautioned'),
+        ('R', 'Restricted'),
+        ('NC-17', 'Adults Only')
+    )
     title = models.CharField(max_length=255)
     release_year = models.IntegerField()
     duration = models.IntegerField()
+    age_category = models.CharField(max_length=5, choices=AGE_CATEGORY_CHOICES)
     description = models.TextField(
         null=True,
         blank=True
@@ -78,6 +93,11 @@ class Movie(models.Model):
         related_name='movies',
         blank=True
     )
+    crews = models.ManyToManyField(
+        Crew,
+        related_name='movies',
+        blank=True
+    )
 
     @property
     def average_rating(self):
@@ -95,12 +115,20 @@ class Movie(models.Model):
 
 # TODO: Create a logic for changing seasons fields base on every season object added to this series or a function
 class Series(models.Model):
+    AGE_CATEGORY_CHOICES = (
+        ('G', 'General Audiences'),
+        ('PG', 'Parental Guidance Suggested'),
+        ('PG-13', 'Parents Strongly Cautioned'),
+        ('R', 'Restricted'),
+        ('NC-17', 'Adults Only')
+    )
     title = models.CharField(max_length=255)
     release_year = models.IntegerField()
-    end_date = models.DateField(
+    end_date = models.IntegerField(
         null=True,
         blank=True
     )
+    age_category = models.CharField(max_length=5, choices=AGE_CATEGORY_CHOICES)
     description = models.TextField(
         null=True,
         blank=True
@@ -113,7 +141,7 @@ class Series(models.Model):
         blank=True,
     )
     image = models.ImageField(
-        upload_to='media/images/series',
+        upload_to='media/images/series/',
         null=True,
         blank=True
     )
@@ -132,6 +160,11 @@ class Series(models.Model):
         related_name='series',
         blank=True
     )
+    crews = models.ManyToManyField(
+        Crew,
+        related_name='series',
+        blank=True
+    )
 
     @property
     def average_rating(self):
@@ -143,10 +176,8 @@ class Series(models.Model):
     def comments_count(self):
         return self.comments.count()
 
-    
     def __str__(self):
         return self.title
-    
 
     # def seasons(self):
         # return self.seasons
@@ -236,6 +267,30 @@ class DownloadFile(models.Model):
         P2160_256 = '2160p-256', '2160p-256'
         P4320_256 = '4320p-256', '4320p-256'
 
+    SOURCE_CHOICES = [
+        ('WEB-DL', 'WEB-DL'),
+        ('WEBRip', 'WEBRip'),
+        ('Blu-ray', 'Blu-ray'),
+        ('BRRip', 'BRRip'),
+        ('HDRip', 'HDRip'),
+        ('DVD-Rip', 'DVD-Rip'),
+        ('CAM', 'CAM'),
+        ('TS', 'TS'),
+        ('HDTV', 'HDTV'),
+    ]
+
+    FILE_FORMAT_CHOICES = [
+        ('MP4', 'MP4'),
+        ('FLV', 'FLV'),
+        ('MOV', 'MOV'),
+        ('MKV', 'MKV'),
+        ('LXF', 'LXF'),
+        ('MXF', 'MXF'),
+        ('AVI', 'AVI'),
+        ('QuickTime', 'QuickTime'),
+        ('WebM', 'WebM'),
+    ]
+
     movie = models.ForeignKey(
         Movie,
         on_delete=models.DO_NOTHING,
@@ -251,8 +306,21 @@ class DownloadFile(models.Model):
         blank=True
     )
     file = models.FileField(
-        upload_to='media/video/',
+        upload_to='media/videos/',
     )
+    source = models.CharField(
+        max_length=20,
+        choices=SOURCE_CHOICES,
+        default='WEB-DL',
+        help_text="Source of the video file."
+    )
+    file_format = models.CharField(
+        max_length=20,
+        choices=FILE_FORMAT_CHOICES,
+        default='MP4',
+        help_text="File container format."
+    )
+    sticky_subtitles = models.BooleanField()
     quality = models.CharField(
         max_length=20,
         choices=QualityChoices.choices
@@ -261,6 +329,12 @@ class DownloadFile(models.Model):
         null=True,
         blank=True
     )
+
+    @property
+    def file_size(self):
+        if self.file and self.file.name:
+            return self.file.size
+        return None
 
     def __str__(self):
         context = f"Movie: {self.movie.title}"\
@@ -293,6 +367,10 @@ class Subtitle(models.Model):
         related_name='subtitles'
     )
     file = models.FileField(upload_to='media/subtitles/')
+    download_link = models.TextField(
+        null=True,
+        blank=True
+    )
     download_file = models.ForeignKey(
         DownloadFile,
         on_delete=models.CASCADE,
@@ -322,6 +400,12 @@ class Trailer(models.Model):
         Season,
         on_delete=models.CASCADE,
         related_name='trailers',
+        null=True,
+        blank=True
+    )
+
+    trailer_video = models.FileField(
+        upload_to='media/trailers/',
         null=True,
         blank=True
     )
