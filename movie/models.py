@@ -52,11 +52,11 @@ class Crew(models.Model):
 
 class Movie(models.Model):
     AGE_CATEGORY_CHOICES = (
-        ('G', 'General Audiences'),
-        ('PG', 'Parental Guidance Suggested'),
-        ('PG-13', 'Parents Strongly Cautioned'),
-        ('R', 'Restricted'),
-        ('NC-17', 'Adults Only')
+        ('G', 'General Audiences(G)'),
+        ('PG', 'Parental Guidance Suggested(PG)'),
+        ('PG-13', 'Parents Strongly Cautioned(PG-13)'),
+        ('R', 'Restricted(R)'),
+        ('NC-17', 'Adults Only(NC-17)')
     )
     title = models.CharField(max_length=255)
     release_year = models.IntegerField()
@@ -96,6 +96,10 @@ class Movie(models.Model):
     crews = models.ManyToManyField(
         Crew,
         related_name='movies',
+        blank=True
+    )
+    subtitle_link = models.TextField(
+        null=True,
         blank=True
     )
 
@@ -197,12 +201,17 @@ class Season(models.Model):
         on_delete=models.CASCADE,
         related_name='seasons'
     )
-    avg_duration = models.IntegerField()
+    # avg_duration = models.IntegerField()
     release_year = models.IntegerField()
     description = models.TextField(
         null=True,
         blank=True
     )
+
+    def avg_duration(self):
+        episode_durations = self.episodes.exclude(
+            duration=None).values_list('duration', flat=True)
+        return sum(episode_durations) / len(episode_durations) if episode_durations else None
 
     def __str__(self):
         season = str(self.number).zfill(3)
@@ -229,6 +238,10 @@ class Episode(models.Model):
         null=True,
         blank=True
     )
+    subtitle_link = models.TextField(
+        null=True,
+        blank=True
+    )
 
     def __str__(self):
         season = str(self.season.number).zfill(3)
@@ -250,33 +263,19 @@ class DownloadFile(models.Model):
         P1440 = '1440p', '1440p'
         P2160 = '2160p', '2160p'
         P4320 = '4320p', '4320p'
-        # 10-bit Variants
-        P720_10 = '720p-10bit', '720p-10bit'
-        P1080_10 = '1080p-10bit', '1080p-10bit'
-        P1440_10 = '1440p-10bit', '1440p-10bit'
-        P2160_10 = '2160p-10bit', '2160p-10bit'
-        P4320_10 = '4320p-10bit', '4320p-10bit'
-        # 256-bit Encryption Variants
-        P144_256 = '144p-256', '144p-256'
-        P240_256 = '240p-256', '240p-256'
-        P360_256 = '360p-256', '360p-256'
-        P480_256 = '480p-256', '480p-256'
-        P720_256 = '720p-256', '720p-256'
-        P1080_256 = '1080p-256', '1080p-256'
-        P1440_256 = '1440p-256', '1440p-256'
-        P2160_256 = '2160p-256', '2160p-256'
-        P4320_256 = '4320p-256', '4320p-256'
 
     SOURCE_CHOICES = [
-        ('WEB-DL', 'WEB-DL'),
-        ('WEBRip', 'WEBRip'),
-        ('Blu-ray', 'Blu-ray'),
-        ('BRRip', 'BRRip'),
+        ('Blu-ray', 'Blu-ray'),  # Best overall quality, often lossless
+        ('WEB-DL', 'WEB-DL'),    # High quality, sourced directly from online services
+        ('WEBRip', 'WEBRip'),    # Lower quality than WEB-DL, encoded from streams
+        # High Definition Rip, good but not as clean as WEB-DL
         ('HDRip', 'HDRip'),
-        ('DVD-Rip', 'DVD-Rip'),
-        ('CAM', 'CAM'),
-        ('TS', 'TS'),
+        ('BRRip', 'BRRip'),      # Blu-ray re-encoded, lower quality than Blu-ray
+        # Recorded directly from TV, may have ads or watermarks
         ('HDTV', 'HDTV'),
+        ('DVD-Rip', 'DVD-Rip'),  # Lower resolution, compressed from DVDs
+        ('TS', 'TS'),            # Telesync, often cam-sourced with synced audio
+        ('CAM', 'CAM'),          # Filmed using a camera in theaters, lowest quality
     ]
 
     FILE_FORMAT_CHOICES = [
@@ -325,6 +324,10 @@ class DownloadFile(models.Model):
         max_length=20,
         choices=QualityChoices.choices
     )
+    _256_bit_encryption = models.BooleanField(
+        default=False, name='256-bit-encryption')
+    _10_bit_variants = models.BooleanField(
+        default=False, name='10-bit-variant')
     download_url = models.TextField(
         null=True,
         blank=True

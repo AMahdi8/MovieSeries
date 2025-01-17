@@ -1,4 +1,6 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
+
 
 from .views import CountryViewSet, GenreViewSet, LanguageViewSet, MovieViewSet, SeriesViewSet
 
@@ -9,4 +11,8 @@ router.register('country', CountryViewSet, basename='country')
 router.register('genre', GenreViewSet, basename='genre')
 router.register('language', LanguageViewSet, basename='language')
 
-urlpatterns = router.urls
+
+urlpatterns = [
+    # path('api/download/<str:token>/',
+    #      SecureDownloadView.as_view(), name='secure_download'),
+] + router.urls
