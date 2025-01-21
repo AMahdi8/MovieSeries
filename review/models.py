@@ -2,6 +2,7 @@ from django.db import models
 
 from movie.models import Movie, Series
 
+
 class Comment(models.Model):
     movie = models.ForeignKey(
         Movie,
@@ -17,7 +18,7 @@ class Comment(models.Model):
         null=True,
         blank=True
     )
-    comment = models.ForeignKey(
+    reply = models.ForeignKey(
         'Comment',
         on_delete=models.CASCADE,
         related_name='comments',
@@ -25,9 +26,8 @@ class Comment(models.Model):
         blank=True
     )
     rating = models.IntegerField(
-        null=True,
-        blank=True,
-        choices=[(i, i) for i in range(1, 6)]
+        choices=[(i, i) for i in range(1, 6)],
+        default=1
     )
     username = models.CharField(max_length=255)
     email = models.EmailField()

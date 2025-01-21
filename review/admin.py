@@ -9,7 +9,7 @@ class CommentAdmin(admin.ModelAdmin):
     list_filter = ('accepted', 'rating', 'created_at', 'updated_at')
     search_fields = ('username', 'email', 'content',
                      'movie__title', 'series__title')
-    autocomplete_fields = ('movie', 'series', 'comment')
+    autocomplete_fields = ('movie', 'series', 'reply')
     actions = ('accept_comments', 'reject_comments')
     list_editable = ('accepted', )
 

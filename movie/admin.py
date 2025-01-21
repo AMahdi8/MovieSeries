@@ -24,7 +24,7 @@ class GenreAdmin(admin.ModelAdmin):
 
 @admin.register(Movie)
 class MovieAdmin(admin.ModelAdmin):
-    list_display = ('title', 'release_year', 'imdb_rating', 'average_rating',
+    list_display = ('title', 'release_year', 'rate', 'average_rating',
                     'related_countires', 'related_languages', 'related_genres')
     search_fields = ('title',)
     list_filter = ('release_year', 'countries', 'languages', 'genres')
@@ -50,7 +50,7 @@ class MovieAdmin(admin.ModelAdmin):
 
 @admin.register(Series)
 class SeriesAdmin(admin.ModelAdmin):
-    list_display = ('title', 'release_year', 'imdb_rating', 'average_rating')
+    list_display = ('title', 'release_year', 'rate', 'average_rating')
     search_fields = ('title',)
     list_filter = ('release_year',
                    'countries', 'languages', 'genres')
@@ -77,7 +77,7 @@ class EpisodeAdmin(admin.ModelAdmin):
 
 @admin.register(DownloadFile)
 class DownloadFileAdmin(admin.ModelAdmin):
-    list_display = ('movie_or_series', 'quality', 'file')
+    list_display = ('movie_or_series', 'quality')
     search_fields = ('movie__title', 'episode__title', 'quality')
     list_filter = ('quality', 'movie', 'episode')
     autocomplete_fields = ('episode', 'movie')
@@ -87,12 +87,12 @@ class DownloadFileAdmin(admin.ModelAdmin):
     movie_or_series.short_description = "Movie/Series"
 
 
-@admin.register(Subtitle)
-class SubtitleAdmin(admin.ModelAdmin):
-    list_display = ('language', 'title', 'download_file')
-    search_fields = ('language__name', 'title', 'download_file__quality')
-    list_filter = ('language',)
-    autocomplete_fields = ('download_file', )
+# @admin.register(Subtitle)
+# class SubtitleAdmin(admin.ModelAdmin):
+#     list_display = ('language', 'title', 'download_file')
+#     search_fields = ('language__name', 'title', 'download_file__quality')
+#     list_filter = ('language',)
+#     autocomplete_fields = ('download_file', )
 
 
 @admin.register(Trailer)

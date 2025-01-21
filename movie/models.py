@@ -59,19 +59,27 @@ class Movie(models.Model):
         ('NC-17', 'Adults Only(NC-17)')
     )
     title = models.CharField(max_length=255)
-    release_year = models.IntegerField()
+    release_year = models.IntegerField(
+        null=True,
+        blank=True
+    )
+    release_date = models.DateField(
+        null=True,
+        blank=True
+    )
     duration = models.IntegerField()
     age_category = models.CharField(max_length=5, choices=AGE_CATEGORY_CHOICES)
     description = models.TextField(
         null=True,
         blank=True
     )
-    imdb_rank = models.IntegerField(default=251)
-    imdb_rating = models.DecimalField(
+    imdb_rank = models.IntegerField(
+        null=True,
+        blank=True
+    )
+    rate = models.DecimalField(
         max_digits=3,
         decimal_places=1,
-        null=True,
-        blank=True,
     )
     image = models.ImageField(
         upload_to='media/images/movie/',
@@ -103,6 +111,9 @@ class Movie(models.Model):
         blank=True
     )
 
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     @property
     def average_rating(self):
         ratings = self.comments.exclude(
@@ -115,6 +126,11 @@ class Movie(models.Model):
 
     def __str__(self):
         return f'{self.title} {self.release_year}'
+
+    def save(self, *args, **kwargs):
+        if self.release_date:
+            self.release_year = self.release_date.year
+        return super().save(*args, **kwargs)
 
 
 # TODO: Create a logic for changing seasons fields base on every season object added to this series or a function
@@ -137,12 +153,13 @@ class Series(models.Model):
         null=True,
         blank=True
     )
-    imdb_rank = models.IntegerField(default=251)
-    imdb_rating = models.DecimalField(
+    imdb_rank = models.IntegerField(
+        null=True,
+        blank=True
+    )
+    rate = models.DecimalField(
         max_digits=3,
         decimal_places=1,
-        null=True,
-        blank=True,
     )
     image = models.ImageField(
         upload_to='media/images/series/',
@@ -170,6 +187,9 @@ class Series(models.Model):
         blank=True
     )
 
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     @property
     def average_rating(self):
         ratings = self.comments.exclude(
@@ -182,9 +202,6 @@ class Series(models.Model):
 
     def __str__(self):
         return self.title
-
-    # def seasons(self):
-        # return self.seasons
 
 
 # TODO: Add a function for episodes of season
@@ -201,12 +218,22 @@ class Season(models.Model):
         on_delete=models.CASCADE,
         related_name='seasons'
     )
-    # avg_duration = models.IntegerField()
-    release_year = models.IntegerField()
+    release_year = models.IntegerField(
+        null=True,
+        blank=True
+    )
+    release_date = models.DateField(
+        null=True,
+        blank=True
+    )
+    is_finished = models.BooleanField(default=False)
     description = models.TextField(
         null=True,
         blank=True
     )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def avg_duration(self):
         episode_durations = self.episodes.exclude(
@@ -216,6 +243,11 @@ class Season(models.Model):
     def __str__(self):
         season = str(self.number).zfill(3)
         return f"{self.series}: {self.title or ''} (S{season})"
+
+    def save(self, *args, **kwargs):
+        if self.release_date:
+            self.release_year = self.release_date.year
+        return super().save(*args, **kwargs)
 
 
 class Episode(models.Model):
@@ -242,6 +274,8 @@ class Episode(models.Model):
         null=True,
         blank=True
     )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         season = str(self.season.number).zfill(3)
@@ -304,9 +338,6 @@ class DownloadFile(models.Model):
         null=True,
         blank=True
     )
-    file = models.FileField(
-        upload_to='media/videos/',
-    )
     source = models.CharField(
         max_length=20,
         choices=SOURCE_CHOICES,
@@ -332,12 +363,12 @@ class DownloadFile(models.Model):
         null=True,
         blank=True
     )
-
-    @property
-    def file_size(self):
-        if self.file and self.file.name:
-            return self.file.size
-        return None
+    file_size = models.IntegerField(
+        null=True,
+        blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         context = f"Movie: {self.movie.title}"\
@@ -359,29 +390,29 @@ class DownloadFile(models.Model):
         return super().save(*args, **kwargs)
 
 
-class Subtitle(models.Model):
-    title = models.CharField(
-        null=True,
-        blank=True
-    )
-    language = models.ForeignKey(
-        Language,
-        on_delete=models.DO_NOTHING,
-        related_name='subtitles'
-    )
-    file = models.FileField(upload_to='media/subtitles/')
-    download_link = models.TextField(
-        null=True,
-        blank=True
-    )
-    download_file = models.ForeignKey(
-        DownloadFile,
-        on_delete=models.CASCADE,
-        related_name='subtitles',
-    )
+# class Subtitle(models.Model):
+#     title = models.CharField(
+#         null=True,
+#         blank=True
+#     )
+#     language = models.ForeignKey(
+#         Language,
+#         on_delete=models.DO_NOTHING,
+#         related_name='subtitles'
+#     )
+#     file = models.FileField(upload_to='media/subtitles/')
+#     download_link = models.TextField(
+#         null=True,
+#         blank=True
+#     )
+#     download_file = models.ForeignKey(
+#         DownloadFile,
+#         on_delete=models.CASCADE,
+#         related_name='subtitles',
+#     )
 
-    def __str__(self):
-        return f"Subtitle ({self.language}) for {self.download_file.quality}"
+#     def __str__(self):
+#         return f"Subtitle ({self.language}) for {self.download_file.quality}"
 
 
 class Trailer(models.Model):
@@ -391,7 +422,10 @@ class Trailer(models.Model):
         blank=True
     )
     url = models.TextField()
-    upload_date = models.DateField()
+    upload_date = models.DateField(
+        null=True,
+        blank=True
+    )
     movie = models.ForeignKey(
         Movie,
         on_delete=models.CASCADE,
@@ -406,12 +440,14 @@ class Trailer(models.Model):
         null=True,
         blank=True
     )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-    trailer_video = models.FileField(
-        upload_to='media/trailers/',
-        null=True,
-        blank=True
-    )
+    # trailer_video = models.FileField(
+    #     upload_to='media/trailers/',
+    #     null=True,
+    #     blank=True
+    # )
 
     def __str__(self):
         if self.movie:
