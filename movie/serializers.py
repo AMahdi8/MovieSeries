@@ -2,6 +2,8 @@ from rest_framework import serializers
 from itsdangerous import URLSafeTimedSerializer  # type: ignore
 from django.conf import settings
 
+from review.serializers import CommentSerializer
+
 from .models import Country, DownloadFile, Episode, Genre, Language, Movie, Season, Series
 
 
@@ -24,40 +26,12 @@ class LanguageNameSerializer(serializers.ModelSerializer):
         fields = ['name']
 
 
-# def get_token_serializer():
-#     secret_key = settings.SECRET_KEY
-#     salt = "secure-download-url"
-#     return URLSafeTimedSerializer(secret_key, salt=salt)
-
-
-# def generate_secure_url(file_id, expires_in=3600):
-#     """
-#     Generate a secure download URL for the file.
-#     Args:
-#         file_id (int): The ID of the file.
-#         file_path (str): The file's URL or path.
-#         expires_in (int): Expiration time in seconds (default: 1 hour).
-#     Returns:
-#         str: The secure download URL.
-#     """
-#     serializer = get_token_serializer()
-#     token = serializer.dumps({"file_id": file_id})
-#     return f"/api/download/{token}?expires_in={expires_in}"
-
-
 class DownloadFileSerializer(serializers.ModelSerializer):
-    # secure_download_url = serializers.SerializerMethodField()
 
     class Meta:
         model = DownloadFile
-        # fields = '__all__'
-        fields = ['id', 'file', 'source', 'file_format', 'sticky_subtitles', 'quality',
+        fields = ['id', 'source', 'file_format', 'sticky_subtitles', 'quality',
                   '256-bit-encryption', '10-bit-variant', 'download_url', 'file_size']
-
-    # def get_secure_download_url(self, obj):
-    #     serializer = get_token_serializer()
-    #     token = serializer.dumps({"file_id": obj.id})
-    #     return f"{settings.BASE_URL}/main/api/download/{token}"
 
 
 class MovieListSerializer(serializers.ModelSerializer):
@@ -70,13 +44,17 @@ class MovieListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
         fields = ['id', 'title', 'release_year', 'countries', 'languages', 'genres', 'highest_quality', 'duration', 'age_category',
-                  'imdb_rank', 'imdb_rating', 'image', 'description', 'average_rating', 'director']
+                  'imdb_rank', 'rate', 'image', 'description', 'average_rating', 'director']
 
     def get_director(self, obj):
         return obj.crews.filter(role='D').values_list('name', flat=True)
 
     def get_highest_quality(self, obj):
-        return f'{obj.highest_source} {obj.highest_quality}'
+        highest_source = getattr(obj, 'highest_source', None)
+        highest_quality = getattr(obj, 'highest_quality', None)
+        if not highest_quality and not highest_source:
+            return None
+        return f'{highest_source} {highest_quality}'
 
 
 class MovieDetailSerializer(serializers.ModelSerializer):
@@ -85,6 +63,9 @@ class MovieDetailSerializer(serializers.ModelSerializer):
     writers = serializers.SerializerMethodField()
     other_stars = serializers.SerializerMethodField()
     highest_quality = serializers.SerializerMethodField()
+    trailers_urls = serializers.SerializerMethodField()
+    accepted_comments = serializers.SerializerMethodField()
+    related_movies = serializers.SerializerMethodField()
     countries = CountryNameSerializer(many=True)
     languages = LanguageNameSerializer(many=True)
     genres = GenreNameSerializer(many=True)
@@ -92,8 +73,8 @@ class MovieDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Movie
-        fields = ['id', 'title', 'highest_quality', 'duration', 'countries', 'languages', 'genres', 'directors',
-                  'actors', 'writers', 'other_stars', 'age_category', 'description', 'download_urls', 'subtitle_link']
+        fields = ['id', 'title', 'highest_quality', 'duration', 'imdb_rank', 'rate', 'countries', 'languages', 'genres', 'directors',
+                  'actors', 'writers', 'other_stars', 'age_category', 'description', 'trailers_urls', 'subtitle_link', 'download_urls', 'related_movies', 'accepted_comments']
 
     def get_highest_quality(self, obj):
         return f'{obj.highest_source} {obj.highest_quality}'
@@ -110,6 +91,21 @@ class MovieDetailSerializer(serializers.ModelSerializer):
     def get_other_stars(self, obj):
         return obj.crews.filter(role='O').values_list('name', flat=True)
 
+    def get_trailers_urls(self, obj):
+        return obj.trailers.values_list('url', flat=True)
+
+    def get_accepted_comments(self, obj):
+        accepted_comments = obj.comments.filter(accepted=True)
+        return CommentSerializer(accepted_comments, many=True).data
+
+    def get_related_movies(self, obj):
+        related_movies = Movie.objects.filter(
+            genres__in=obj.genres.all()
+        ).exclude(id=obj.id)
+
+        related_movies = related_movies.order_by('?')[:6]
+        return MovieListSerializer(related_movies, many=True).data
+
 
 class SeriesListSerializer(serializers.ModelSerializer):
     director = serializers.SerializerMethodField()
@@ -120,7 +116,7 @@ class SeriesListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Series
         fields = ['id', 'title', 'release_year', 'end_date', 'age_category', 'description', 'imdb_rank',
-                  'imdb_rating', 'image', 'average_rating', 'countries', 'languages', 'genres', 'director']
+                  'rate', 'image', 'average_rating', 'countries', 'languages', 'genres', 'director']
 
     def get_director(self, obj):
         return obj.crews.filter(role='D').values_list('name', flat=True)
@@ -137,11 +133,16 @@ class EpisodeSerializer(serializers.ModelSerializer):
 
 
 class SeasonSerializer(serializers.ModelSerializer):
+    trailers_urls = serializers.SerializerMethodField()
     episodes = EpisodeSerializer(many=True)
 
     class Meta:
         model = Season
-        fields = ['id', 'title', 'number', 'avg_duration', 'episodes']
+        fields = ['id', 'title', 'number', 'avg_duration',
+                  'is_finished', 'description', 'trailers_urls', 'episodes']
+
+    def get_trailers_urls(self, obj):
+        return obj.trailers.values_list('url', flat=True)
 
 
 class SeriesDetailSerializer(serializers.ModelSerializer):
@@ -149,6 +150,8 @@ class SeriesDetailSerializer(serializers.ModelSerializer):
     actors = serializers.SerializerMethodField()
     writers = serializers.SerializerMethodField()
     other_stars = serializers.SerializerMethodField()
+    accepted_comments = serializers.SerializerMethodField()
+    related_series = serializers.SerializerMethodField()
     seasons = SeasonSerializer(many=True)
     countries = CountryNameSerializer(many=True)
     languages = LanguageNameSerializer(many=True)
@@ -156,8 +159,8 @@ class SeriesDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Series
-        fields = ['id', 'title', 'release_year', 'end_date', 'age_category', 'description', 'imdb_rank', 'imdb_rating',
-                  'average_rating', 'image', 'countries', 'languages', 'genres', 'director', 'actors', 'writers', 'other_stars', 'seasons']
+        fields = ['id', 'title', 'release_year', 'end_date', 'age_category', 'description', 'imdb_rank', 'rate',
+                  'average_rating', 'image', 'countries', 'languages', 'genres', 'director', 'actors', 'writers', 'other_stars', 'seasons', 'related_series', 'accepted_comments']
 
     def get_director(self, obj):
         return obj.crews.filter(role='D').values_list('name', flat=True)
@@ -170,6 +173,18 @@ class SeriesDetailSerializer(serializers.ModelSerializer):
 
     def get_other_stars(self, obj):
         return obj.crews.filter(role='O').values_list('name', flat=True)
+
+    def get_accepted_comments(self, obj):
+        accepted_comments = obj.comments.filter(accepted=True)
+        return CommentSerializer(accepted_comments, many=True).data
+
+    def get_related_series(self, obj):
+        related_series = Series.objects.filter(
+            genres__in=obj.genres.all()
+        ).exclude(id=obj.id)
+
+        related_series = related_series.order_by('?')[:6]
+        return SeriesListSerializer(related_series, many=True).data
 
 
 class CountrySerializer(serializers.ModelSerializer):

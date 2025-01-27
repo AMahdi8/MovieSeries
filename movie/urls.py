@@ -2,7 +2,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 
-from .views import CountryViewSet, GenreViewSet, LanguageViewSet, MovieViewSet, SeriesViewSet
+from .views import CountryViewSet, GenreViewSet, HomePage, LanguageViewSet, MovieViewSet, SearchView, SeriesViewSet
 
 router = DefaultRouter()
 router.register('movie', MovieViewSet, basename='movie')
@@ -13,6 +13,6 @@ router.register('language', LanguageViewSet, basename='language')
 
 
 urlpatterns = [
-    # path('api/download/<str:token>/',
-    #      SecureDownloadView.as_view(), name='secure_download'),
+    path('search/', SearchView.as_view(), name='search'),
+    path('home/', HomePage.as_view(), name='home')
 ] + router.urls

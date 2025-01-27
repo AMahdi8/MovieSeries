@@ -1,8 +1,8 @@
 from django.core.management.base import BaseCommand
-from faker import Faker # type: ignore
+from faker import Faker  # type: ignore
 from model_bakery import baker
 from random import sample
-from movie.models import Country, Language, Genre, Crew, Movie, Series, Season, Episode, DownloadFile, Subtitle, Trailer
+from movie.models import Country, Language, Genre, Crew, Movie, Series, Season, Episode, DownloadFile, Trailer
 import tempfile
 
 
@@ -41,7 +41,8 @@ class Command(BaseCommand):
         crews = []
         for _ in range(20):
             img_content = faker.image()
-            image_file = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+            image_file = tempfile.NamedTemporaryFile(
+                delete=False, suffix='.jpg')
             image_file.write(img_content)
             image_file.close()
 
@@ -50,7 +51,7 @@ class Command(BaseCommand):
                 name=faker.name(),
                 role=faker.random_element(['A', 'D', 'W', 'O']),
                 bio=faker.text(max_nb_chars=200),
-                birth_date=faker.date_of_birth(minimum_age=18, maximum_age=80),
+                birth_year=faker.random_int(min=1930, max=2025),
                 country=faker.random_element(countries),
                 image=image_file.name
             )
@@ -65,10 +66,12 @@ class Command(BaseCommand):
                 title=faker.sentence(nb_words=3),
                 release_year=faker.year(),
                 duration=faker.random_int(min=60, max=180),
-                age_category=faker.random_element(['G', 'PG', 'PG-13', 'R', 'NC-17']),
+                age_category=faker.random_element(
+                    ['G', 'PG', 'PG-13', 'R', 'NC-17']),
                 description=faker.text(max_nb_chars=500),
                 imdb_rank=faker.random_int(min=1, max=250),
-                imdb_rating=faker.pydecimal(left_digits=1, right_digits=1, min_value=1, max_value=10),
+                rate=faker.pydecimal(
+                    left_digits=1, right_digits=1, min_value=1, max_value=10),
             )
 
             movie.countries.add(*sample(countries, k=3))
@@ -81,23 +84,23 @@ class Command(BaseCommand):
                 download_file = baker.make(
                     DownloadFile,
                     movie=movie,
-                    quality=faker.random_element(DownloadFile.QualityChoices.values),
+                    quality=faker.random_element(
+                        DownloadFile.QualityChoices.values),
                     file_format=faker.random_element(['MP4', 'MKV', 'AVI']),
                     source=faker.random_element(['WEB-DL', 'Blu-ray', 'HDTV']),
-                    file=None,
                     sticky_subtitles=faker.boolean(),
                     download_url=faker.url()
                 )
 
-                # Add subtitles
-                for _ in range(2):
-                    baker.make(
-                        Subtitle,
-                        download_file=download_file,
-                        language=faker.random_element(languages),
-                        file=None,
-                        download_link=faker.url()
-                    )
+                # # Add subtitles
+                # for _ in range(2):
+                #     baker.make(
+                #         Subtitle,
+                #         download_file=download_file,
+                #         language=faker.random_element(languages),
+                #         file=None,
+                #         download_link=faker.url()
+                #     )
 
             # Add trailers
             for _ in range(2):
@@ -121,7 +124,8 @@ class Command(BaseCommand):
                 release_year=faker.year(),
                 description=faker.text(max_nb_chars=500),
                 imdb_rank=faker.random_int(min=1, max=250),
-                imdb_rating=faker.pydecimal(left_digits=1, right_digits=1, min_value=1, max_value=10),
+                rate=faker.pydecimal(
+                    left_digits=1, right_digits=1, min_value=1, max_value=10),
             )
 
             series.countries.add(*sample(countries, k=2))
@@ -153,23 +157,25 @@ class Command(BaseCommand):
                         download_file = baker.make(
                             DownloadFile,
                             episode=episode,
-                            quality=faker.random_element(DownloadFile.QualityChoices.values),
-                            file_format=faker.random_element(['MP4', 'MKV', 'AVI']),
-                            source=faker.random_element(['WEB-DL', 'Blu-ray', 'HDTV']),
-                            file=None,
+                            quality=faker.random_element(
+                                DownloadFile.QualityChoices.values),
+                            file_format=faker.random_element(
+                                ['MP4', 'MKV', 'AVI']),
+                            source=faker.random_element(
+                                ['WEB-DL', 'Blu-ray', 'HDTV']),
                             sticky_subtitles=faker.boolean(),
                             download_url=faker.url()
                         )
 
-                        # Add subtitles
-                        for _ in range(2):
-                            baker.make(
-                                Subtitle,
-                                download_file=download_file,
-                                language=faker.random_element(languages),
-                                file=None,
-                                download_link=faker.url()
-                            )
+                        # # Add subtitles
+                        # for _ in range(2):
+                        #     baker.make(
+                        #         Subtitle,
+                        #         download_file=download_file,
+                        #         language=faker.random_element(languages),
+                        #         file=None,
+                        #         download_link=faker.url()
+                        #     )
 
                 # Add trailers for the season
                 for _ in range(2):
