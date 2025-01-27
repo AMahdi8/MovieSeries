@@ -18,50 +18,107 @@ from .utilities import get_movies_and_series_by_country
 
 class HomePage(APIView):
     def get(self, request):
-        Three_month_ago = now() - timedelta(days=30)
 
-        recent_highest_rated_movies = Movie.objects.filter(
-            release_date__gte=Three_month_ago
-        ).order_by('rate')[:4]
+        choosen_movie = Movie.objects.filter(
+            choosen_home_page=True
+        )
+        choosen_series = Series.objects.filter(
+            choosen_home_page=True
+        )
 
-        recent_highest_rated_series = Series.objects.filter(
-            seasons__release_date__gte=Three_month_ago
-        ).order_by('rate')[:4]
-
-        korean = get_movies_and_series_by_country('South Korea')
-        chinese = get_movies_and_series_by_country('South Korea')
-        turkish = get_movies_and_series_by_country('South Korea')
+        korean_movies, korean_series = get_movies_and_series_by_country(
+            'South Korea')
+        chinese_movies, chinese_series = get_movies_and_series_by_country(
+            'China')
+        turkish_movie, turkish_series = get_movies_and_series_by_country(
+            'Turkey')
 
         other_movies = Movie.objects.exclude(
             countries__name__in=["South Korea", "China", "Turkey"]
-        ).filter(rate__gte=30)
+        ).filter(choosen_country=True)
 
         other_series = Series.objects.exclude(
             countries__name__in=["South Korea", "China", "Turkey"]
-        ).filter(rate__gte=30)
+        ).filter(choosen_country=True)
 
-        other_combined = list(other_movies) + list(other_series)
+        other_random_movie = sample(
+            list(other_movies), min(len(other_movies), 3))
+        other_random_series = sample(
+            list(other_series), min(len(other_series), 3))
 
-        other_random = sample(other_combined, min(len(other_combined), 3))
+        # Choosen for home page
+        choosen_movies_serieslizer = MovieListSerializer(
+            choosen_movie, many=True)
+        choosen_series_serieslizer = SeriesListSerializer(
+            choosen_series, many=True)
 
-        recent_movies_serializer = MovieListSerializer(
-            recent_highest_rated_movies, many=True)
-        recent_series_serializer = SeriesListSerializer(
-            recent_highest_rated_series, many=True)
-        korean_serializer = MovieListSerializer(korean, many=True)
-        chinese_serializer = MovieListSerializer(chinese, many=True)
-        turkish_serializer = MovieListSerializer(turkish, many=True)
-        other_serializer = MovieListSerializer(other_random, many=True)
+        # Korean
+        korean_movies_serializer = MovieListSerializer(
+            korean_movies, many=True)
+        korean_series_serializer = SeriesListSerializer(
+            korean_series, many=True)
+
+        # Chinese
+        chinese_movies_serializer = MovieListSerializer(
+            chinese_movies, many=True)
+        chinese_series_serializer = SeriesListSerializer(
+            chinese_series, many=True)
+
+        # Turkish
+        turkish_movies_serializer = MovieListSerializer(
+            turkish_movie, many=True)
+        turkish_series_serializer = SeriesListSerializer(
+            turkish_series, many=True)
+
+        # foreign countries
+        other_movies_serializer = MovieListSerializer(
+            other_random_movie, many=True)
+        other_series_serializer = SeriesListSerializer(
+            other_random_series, many=True)
+
         return Response({
             "recent_highest_rated": {
-                "movies": recent_movies_serializer.data,
-                "series": recent_series_serializer.data,
+                "movies": choosen_movies_serieslizer.data,
+                "series": choosen_series_serieslizer.data,
             },
-            "korean_content": korean_serializer.data,
-            "chinese_content": chinese_serializer.data,
-            "turkish_content": turkish_serializer.data,
-            "other_content": other_serializer.data,
+            "korean_content": {
+                "movies": korean_movies_serializer.data,
+                "series": korean_series_serializer.data,
+            },
+            "chinese_content": {
+                "movies": chinese_movies_serializer.data,
+                "series": chinese_series_serializer.data,
+            },
+            "turkish_content": {
+                "movies": turkish_movies_serializer.data,
+                "series": turkish_series_serializer.data,
+            },
+            "other_content": {
+                "movies": other_movies_serializer.data,
+                "series": other_series_serializer.data,
+            },
         })
+
+
+class SearchView(APIView):
+    def get(self, request):
+        query = request.query_params.get('q', '').strip()
+        if not query:
+            return Response({"results": []})
+
+        movies = Movie.objects.filter(title__icontains=query)
+
+        series = Series.objects.filter(title__icontains=query)
+
+        movie_serializer = MovieListSerializer(movies, many=True)
+        series_serializer = SeriesListSerializer(series, many=True)
+
+        results = {
+            "movies": movie_serializer.data,
+            "series": series_serializer.data
+        }
+
+        return Response(results)
 
 
 class MovieViewSet(ListModelMixin,
@@ -129,53 +186,3 @@ class GenreViewSet(RetrieveModelMixin,
         'series', 'movies').all()
     serializer_class = GenreSerializer
     lookup_field = 'name'
-
-
-class SearchView(APIView):
-    def get(self, request):
-        query = request.query_params.get('q', '').strip()
-        if not query:
-            return Response({"results": []})
-
-        movies = Movie.objects.filter(title__icontains=query)
-
-        series = Series.objects.filter(title__icontains=query)
-
-        movie_serializer = MovieListSerializer(movies, many=True)
-        series_serializer = SeriesListSerializer(series, many=True)
-
-        results = {
-            "movies": movie_serializer.data,
-            "series": series_serializer.data
-        }
-
-        return Response(results)
-
-#
-# class SecureDownloadView(APIView):
-#     """
-#     View to handle secure file downloads with redirection.
-#     """
-
-#     def get(self, request, token):
-#         serializer = get_token_serializer()
-#         try:
-#             # Decode the token and validate expiration
-#             data = serializer.loads(token, max_age=int(request.GET.get('expires_in', 3600)))
-#         except SignatureExpired:
-#             raise PermissionDenied("This link has expired.")
-#         except BadSignature:
-#             raise PermissionDenied("Invalid download link.")
-
-#         # Retrieve file details from the token
-#         file_id = data.get("file_id")
-#         file_path = data.get("file_path")
-
-#         # Verify the file exists in the database
-#         try:
-#             download_file = DownloadFile.objects.get(id=file_id)
-#         except DownloadFile.DoesNotExist:
-#             raise NotFound("File not found.")
-
-#         # Redirect the user to the file's URL
-#         return HttpResponseRedirect(file_path)

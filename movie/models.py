@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 
 
 class Country(models.Model):
@@ -32,7 +33,8 @@ class Crew(models.Model):
     name = models.CharField(max_length=255)
     role = models.CharField(max_length=1, choices=ROLE_CHOICES)
     bio = models.TextField()
-    birth_date = models.DateField()
+    # birth_date = models.DateField()
+    birth_year = models.IntegerField()
     image = models.ImageField(
         upload_to='media/images/crews/',
         null=True,
@@ -60,10 +62,6 @@ class Movie(models.Model):
     )
     title = models.CharField(max_length=255)
     release_year = models.IntegerField(
-        null=True,
-        blank=True
-    )
-    release_date = models.DateField(
         null=True,
         blank=True
     )
@@ -110,7 +108,8 @@ class Movie(models.Model):
         null=True,
         blank=True
     )
-
+    choosen_home_page = models.BooleanField(default=False)
+    choosen_country = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -128,8 +127,18 @@ class Movie(models.Model):
         return f'{self.title} {self.release_year}'
 
     def save(self, *args, **kwargs):
-        if self.release_date:
-            self.release_year = self.release_date.year
+        if self.choosen_home_page:
+            selected_movie = Movie.objects.filter(
+                choosen_home_page=True).exclude(pk=self.pk).count()
+            selected_series = Series.objects.filter(
+                choosen_home_page=True).count()
+
+            print(selected_movie, selected_series)
+            if selected_series + selected_movie >= 10:
+                raise ValidationError(
+                    f"You can't choose more than 10 movie and series for home page\n please remove those you don't want, then add others"
+                )
+
         return super().save(*args, **kwargs)
 
 
@@ -187,6 +196,8 @@ class Series(models.Model):
         blank=True
     )
 
+    choosen_home_page = models.BooleanField(default=False)
+    choosen_country = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -199,6 +210,21 @@ class Series(models.Model):
     @property
     def comments_count(self):
         return self.comments.count()
+
+    def save(self, *args, **kwargs):
+        if self.choosen_home_page:
+            selected_movie = Movie.objects.filter(
+                choosen_home_page=True).count()
+            selected_series = Series.objects.filter(
+                choosen_home_page=True).exclude(pk=self.pk).count()
+
+            print(selected_movie, selected_series)
+            if selected_series + selected_movie >= 10:
+                raise ValidationError(
+                    f"You can't choose more than 10 movie and series for home page\n please remove those you don't want, then add others"
+                )
+
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title
@@ -377,8 +403,7 @@ class DownloadFile(models.Model):
             if self.episode\
             else "No Context"
 
-        file_name = self.file.name.split('/')[-1] if self.file else "No File"
-        return f"{context} | Quality: {self.quality} | File: {file_name}"
+        return f"{context} | Quality: {self.quality}"
 
     def save(self, *args, **kwargs):
         if not self.episode and not self.movie:

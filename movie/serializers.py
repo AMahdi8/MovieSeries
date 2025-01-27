@@ -151,6 +151,7 @@ class SeriesDetailSerializer(serializers.ModelSerializer):
     writers = serializers.SerializerMethodField()
     other_stars = serializers.SerializerMethodField()
     accepted_comments = serializers.SerializerMethodField()
+    related_series = serializers.SerializerMethodField()
     seasons = SeasonSerializer(many=True)
     countries = CountryNameSerializer(many=True)
     languages = LanguageNameSerializer(many=True)
@@ -159,7 +160,7 @@ class SeriesDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Series
         fields = ['id', 'title', 'release_year', 'end_date', 'age_category', 'description', 'imdb_rank', 'rate',
-                  'average_rating', 'image', 'countries', 'languages', 'genres', 'director', 'actors', 'writers', 'other_stars', 'seasons', 'accepted_comments']
+                  'average_rating', 'image', 'countries', 'languages', 'genres', 'director', 'actors', 'writers', 'other_stars', 'seasons', 'related_series', 'accepted_comments']
 
     def get_director(self, obj):
         return obj.crews.filter(role='D').values_list('name', flat=True)
@@ -176,6 +177,14 @@ class SeriesDetailSerializer(serializers.ModelSerializer):
     def get_accepted_comments(self, obj):
         accepted_comments = obj.comments.filter(accepted=True)
         return CommentSerializer(accepted_comments, many=True).data
+
+    def get_related_series(self, obj):
+        related_series = Series.objects.filter(
+            genres__in=obj.genres.all()
+        ).exclude(id=obj.id)
+
+        related_series = related_series.order_by('?')[:6]
+        return SeriesListSerializer(related_series, many=True).data
 
 
 class CountrySerializer(serializers.ModelSerializer):
