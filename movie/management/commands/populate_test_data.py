@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 from faker import Faker  # type: ignore
 from model_bakery import baker
 from random import sample
-from movie.models import Country, Language, Genre, Crew, Movie, Series, Season, Episode, DownloadFile, Trailer
+from movie.models import Country, Language, Genre, Crew, Movie, Series, Season, Episode, DownloadFile
 import tempfile
 
 
@@ -72,6 +72,8 @@ class Command(BaseCommand):
                 imdb_rank=faker.random_int(min=1, max=250),
                 rate=faker.pydecimal(
                     left_digits=1, right_digits=1, min_value=1, max_value=10),
+                subtitle_link=faker.text(max_nb_chars=500),
+                trailer_link=faker.text(max_nb_chars=500),
             )
 
             movie.countries.add(*sample(countries, k=3))
@@ -103,14 +105,14 @@ class Command(BaseCommand):
                 #     )
 
             # Add trailers
-            for _ in range(2):
-                baker.make(
-                    Trailer,
-                    movie=movie,
-                    title=faker.sentence(nb_words=4),
-                    url=faker.url(),
-                    upload_date=faker.date_this_year(),
-                )
+            # for _ in range(2):
+            #     baker.make(
+            #         Trailer,
+            #         movie=movie,
+            #         title=faker.sentence(nb_words=4),
+            #         url=faker.url(),
+            #         upload_date=faker.date_this_year(),
+            #     )
 
             movies.append(movie)
 
@@ -138,7 +140,8 @@ class Command(BaseCommand):
                 season = baker.make(
                     Season,
                     series=series,
-                    number=season_number
+                    number=season_number,
+                    trailer_link=faker.text(max_nb_chars=500),
                 )
 
                 # Add episodes to each season
@@ -149,7 +152,8 @@ class Command(BaseCommand):
                         number=episode_number,
                         title=faker.sentence(nb_words=4),
                         duration=faker.random_int(min=20, max=60),
-                        description=faker.text(max_nb_chars=300)
+                        description=faker.text(max_nb_chars=300),
+                        subtitle_link=faker.text(max_nb_chars=500),
                     )
 
                     # Add download files for episodes
@@ -178,14 +182,14 @@ class Command(BaseCommand):
                         #     )
 
                 # Add trailers for the season
-                for _ in range(2):
-                    baker.make(
-                        Trailer,
-                        series_season=season,
-                        title=faker.sentence(nb_words=4),
-                        url=faker.url(),
-                        upload_date=faker.date_this_year(),
-                    )
+                # for _ in range(2):
+                #     baker.make(
+                #         Trailer,
+                #         series_season=season,
+                #         title=faker.sentence(nb_words=4),
+                #         url=faker.url(),
+                #         upload_date=faker.date_this_year(),
+                #     )
 
             series_list.append(series)
 

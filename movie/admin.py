@@ -129,19 +129,6 @@ class DownloadFileAdmin(admin.ModelAdmin):
     movie_or_series.short_description = "Movie/Series"
 
 
-@admin.register(Trailer)
-class TrailerAdmin(admin.ModelAdmin):
-    list_display = ('title', 'movie_or_series', 'upload_date')
-    search_fields = ('title', 'movie__title', 'series_season__series__title')
-    list_filter = ('upload_date', 'movie', 'series_season')
-    autocomplete_fields = ('series_season', 'movie')
-    list_per_page = 10
-
-    def movie_or_series(self, obj):
-        return obj.movie.title if obj.movie else obj.series_season if obj.series_season else "None"
-    movie_or_series.short_description = "Movie/Series"
-
-
 @admin.register(Crew)
 class CrewAdmin(admin.ModelAdmin):
     list_display = ('name', 'role', 'related_movies', 'related_series')
@@ -168,3 +155,15 @@ class CrewAdmin(admin.ModelAdmin):
 #     search_fields = ('language__name', 'title', 'download_file__quality')
 #     list_filter = ('language',)
 #     autocomplete_fields = ('download_file', )
+
+# @admin.register(Trailer)
+# class TrailerAdmin(admin.ModelAdmin):
+#     list_display = ('title', 'movie_or_series', 'upload_date')
+#     search_fields = ('title', 'movie__title', 'series_season__series__title')
+#     list_filter = ('upload_date', 'movie', 'series_season')
+#     autocomplete_fields = ('series_season', 'movie')
+#     list_per_page = 10
+
+#     def movie_or_series(self, obj):
+#         return obj.movie.title if obj.movie else obj.series_season if obj.series_season else "None"
+#     movie_or_series.short_description = "Movie/Series"
