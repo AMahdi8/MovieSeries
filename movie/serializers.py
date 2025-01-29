@@ -63,7 +63,7 @@ class MovieDetailSerializer(serializers.ModelSerializer):
     writers = serializers.SerializerMethodField()
     other_stars = serializers.SerializerMethodField()
     highest_quality = serializers.SerializerMethodField()
-    trailers_urls = serializers.SerializerMethodField()
+    # trailers_urls = serializers.SerializerMethodField()
     accepted_comments = serializers.SerializerMethodField()
     related_movies = serializers.SerializerMethodField()
     countries = CountryNameSerializer(many=True)
@@ -73,8 +73,10 @@ class MovieDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Movie
-        fields = ['id', 'title', 'highest_quality', 'duration', 'imdb_rank', 'rate', 'countries', 'languages', 'genres', 'directors',
-                  'actors', 'writers', 'other_stars', 'age_category', 'description', 'trailers_urls', 'subtitle_link', 'download_urls', 'related_movies', 'accepted_comments']
+        fields = ['id', 'title', 'highest_quality', 'duration', 'imdb_rank', 'rate',
+                  'countries', 'languages', 'genres', 'directors', 'actors', 'writers',
+                  'other_stars', 'age_category', 'description', 'subtitle_link',
+                  'trailer_link', 'download_urls', 'related_movies', 'accepted_comments']
 
     def get_highest_quality(self, obj):
         return f'{obj.highest_source} {obj.highest_quality}'
@@ -91,8 +93,8 @@ class MovieDetailSerializer(serializers.ModelSerializer):
     def get_other_stars(self, obj):
         return obj.crews.filter(role='O').values_list('name', flat=True)
 
-    def get_trailers_urls(self, obj):
-        return obj.trailers.values_list('url', flat=True)
+    # def get_trailers_urls(self, obj):
+    #     return obj.trailers.values_list('url', flat=True)
 
     def get_accepted_comments(self, obj):
         accepted_comments = obj.comments.filter(accepted=True)
@@ -122,8 +124,6 @@ class SeriesListSerializer(serializers.ModelSerializer):
         return obj.crews.filter(role='D').values_list('name', flat=True)
 
 
-# generate secure download url
-# continue from here
 class EpisodeSerializer(serializers.ModelSerializer):
     download_urls = DownloadFileSerializer(many=True)
 
@@ -133,16 +133,16 @@ class EpisodeSerializer(serializers.ModelSerializer):
 
 
 class SeasonSerializer(serializers.ModelSerializer):
-    trailers_urls = serializers.SerializerMethodField()
+    # trailers_urls = serializers.SerializerMethodField()
     episodes = EpisodeSerializer(many=True)
 
     class Meta:
         model = Season
         fields = ['id', 'title', 'number', 'avg_duration',
-                  'is_finished', 'description', 'trailers_urls', 'episodes']
+                  'is_finished', 'description', 'trailer_link', 'episodes']
 
-    def get_trailers_urls(self, obj):
-        return obj.trailers.values_list('url', flat=True)
+    # def get_trailers_urls(self, obj):
+    #     return obj.trailers.values_list('url', flat=True)
 
 
 class SeriesDetailSerializer(serializers.ModelSerializer):

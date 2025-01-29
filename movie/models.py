@@ -108,6 +108,10 @@ class Movie(models.Model):
         null=True,
         blank=True
     )
+    trailer_link = models.TextField(
+        null=True,
+        blank=True
+    )
     choosen_home_page = models.BooleanField(default=False)
     choosen_country = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -133,7 +137,6 @@ class Movie(models.Model):
             selected_series = Series.objects.filter(
                 choosen_home_page=True).count()
 
-            print(selected_movie, selected_series)
             if selected_series + selected_movie >= 10:
                 raise ValidationError(
                     f"You can't choose more than 10 movie and series for home page\n please remove those you don't want, then add others"
@@ -218,7 +221,6 @@ class Series(models.Model):
             selected_series = Series.objects.filter(
                 choosen_home_page=True).exclude(pk=self.pk).count()
 
-            print(selected_movie, selected_series)
             if selected_series + selected_movie >= 10:
                 raise ValidationError(
                     f"You can't choose more than 10 movie and series for home page\n please remove those you don't want, then add others"
@@ -254,6 +256,10 @@ class Season(models.Model):
     )
     is_finished = models.BooleanField(default=False)
     description = models.TextField(
+        null=True,
+        blank=True
+    )
+    trailer_link = models.TextField(
         null=True,
         blank=True
     )
@@ -440,33 +446,33 @@ class DownloadFile(models.Model):
 #         return f"Subtitle ({self.language}) for {self.download_file.quality}"
 
 
-class Trailer(models.Model):
-    title = models.CharField(
-        max_length=255,
-        null=True,
-        blank=True
-    )
-    url = models.TextField()
-    upload_date = models.DateField(
-        null=True,
-        blank=True
-    )
-    movie = models.ForeignKey(
-        Movie,
-        on_delete=models.CASCADE,
-        related_name='trailers',
-        null=True,
-        blank=True
-    )
-    series_season = models.ForeignKey(
-        Season,
-        on_delete=models.CASCADE,
-        related_name='trailers',
-        null=True,
-        blank=True
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+# class Trailer(models.Model):
+#     title = models.CharField(
+#         max_length=255,
+#         null=True,
+#         blank=True
+#     )
+#     url = models.TextField()
+#     upload_date = models.DateField(
+#         null=True,
+#         blank=True
+#     )
+#     movie = models.ForeignKey(
+#         Movie,
+#         on_delete=models.CASCADE,
+#         related_name='trailers',
+#         null=True,
+#         blank=True
+#     )
+#     series_season = models.ForeignKey(
+#         Season,
+#         on_delete=models.CASCADE,
+#         related_name='trailers',
+#         null=True,
+#         blank=True
+#     )
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
 
     # trailer_video = models.FileField(
     #     upload_to='media/trailers/',
@@ -474,28 +480,28 @@ class Trailer(models.Model):
     #     blank=True
     # )
 
-    def __str__(self):
-        if self.movie:
-            if self.title:
-                return f"Trailer for Movie: {self.movie} - {self.title}"
-            else:
-                return f"Trailer for Movie: {self.movie}"
+    # def __str__(self):
+    #     if self.movie:
+    #         if self.title:
+    #             return f"Trailer for Movie: {self.movie} - {self.title}"
+    #         else:
+    #             return f"Trailer for Movie: {self.movie}"
 
-        elif self.series_season:
-            series_title = self.series_season.series
-            season_number = f"Season {self.series_season.number:02}"
-            if self.title:
-                return f"Trailer for Series: {series_title} ({season_number}) - {self.title}"
-            else:
-                return f"Trailer for Series: {series_title} ({season_number})"
+    #     elif self.series_season:
+    #         series_title = self.series_season.series
+    #         season_number = f"Season {self.series_season.number:02}"
+    #         if self.title:
+    #             return f"Trailer for Series: {series_title} ({season_number}) - {self.title}"
+    #         else:
+    #             return f"Trailer for Series: {series_title} ({season_number})"
 
-        return f"Trailer: {self.title}"
+    #     return f"Trailer: {self.title}"
 
-    def save(self, *args, **kwargs):
-        if not self.series_season and not self.movie:
-            raise ValueError(
-                "Trailer must be associated with either a movie or a series.")
-        if self.series_season and self.movie:
-            raise ValueError(
-                "Trailer cannot be associated with both a movie and a series simultaneously.")
-        return super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     if not self.series_season and not self.movie:
+    #         raise ValueError(
+    #             "Trailer must be associated with either a movie or a series.")
+    #     if self.series_season and self.movie:
+    #         raise ValueError(
+    #             "Trailer cannot be associated with both a movie and a series simultaneously.")
+    #     return super().save(*args, **kwargs)
