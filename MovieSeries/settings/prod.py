@@ -7,6 +7,8 @@ DEBUG = False
 SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-secret-key')
 
 ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['dramoir.com', 'www.dramoir.com', '91.151.90.30', 'localhost']
+CSRF_TRUSTED_ORIGINS = ['dramoir.com', 'www.dramoir.com', '91.151.90.30', 'localhost']
 
 
 DATABASES = {
