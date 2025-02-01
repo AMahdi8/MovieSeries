@@ -14,5 +14,4 @@ router.register('language', LanguageViewSet, basename='language')
 
 urlpatterns = [
     path('search/', SearchView.as_view(), name='search'),
-    path('home/', HomePage.as_view(), name='home')
 ] + router.urls
