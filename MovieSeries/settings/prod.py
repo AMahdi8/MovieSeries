@@ -1,16 +1,30 @@
 from .common import *
+import os
 # change all of settings in here for deployment
 
-DEBUG = True
+DEBUG = False
 
-SECRET_KEY = os.environ('SECRET_KEY')
+SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-secret-key')
 
 ALLOWED_HOSTS = []
 
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'movies_series'),
+        'USER': os.environ.get('DB_USER', 'your_db_user'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'your_db_password'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
+
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
